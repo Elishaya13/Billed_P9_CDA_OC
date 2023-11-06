@@ -40,5 +40,6 @@ mot de passe : employee
 
 ## Screenshots
 
-![App Screenshot](https://ibb.co/QbWS5sG)
-![App Screenshot](https://ibb.co/K65pgnf)
+![App Screenshot](https://i.ibb.co/YR5nrvG/billed-interface.png)
+
+![App Screenshot](https://i.ibb.co/BLf5JkQ/billed-interface-employee.png)

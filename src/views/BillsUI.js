@@ -21,7 +21,6 @@ const row = (bill) => {
 
 const rows = (data) => {
   if (data) {
-    console.log('data found');
     const antiChrono = (a, b) => (a.date < b.date ? 1 : -1);
     const dataArray = [...data];
     const dataSorted = dataArray.sort(antiChrono);

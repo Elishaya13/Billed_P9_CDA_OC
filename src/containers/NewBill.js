@@ -22,11 +22,20 @@ export default class NewBill {
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
     const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const fileErrorMessage = this.document.querySelector('#fileErrorMessage');
+    const submitButton = this.document.querySelector(
+      `button[data-testid="submit-button"]`
+    );
     if (!allowedMimeTypes.includes(file.type)) {
-      console.error(
-        'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.'
-      );
+      file.value = '';
+      fileErrorMessage.textContent =
+        'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.';
+      submitButton.disabled = true;
+
       return;
+    } else {
+      fileErrorMessage.textContent = '';
+      submitButton.disabled = false;
     }
     const filePath = e.target.value.split(/\\/g);
     const fileName = filePath[filePath.length - 1];

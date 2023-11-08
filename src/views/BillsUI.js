@@ -20,13 +20,17 @@ const row = (bill) => {
 };
 
 const rows = (data) => {
-  const antiChrono = (a, b) => (a.date < b.date ? 1 : -1);
-  const dataArray = [...data];
-  const dataSorted = dataArray.sort(antiChrono);
-  console.log(dataSorted);
-  return dataSorted && dataSorted.length
-    ? dataSorted.map((bill) => row(bill)).join('')
-    : '';
+  if (data) {
+    console.log('data found');
+    const antiChrono = (a, b) => (a.date < b.date ? 1 : -1);
+    const dataArray = [...data];
+    const dataSorted = dataArray.sort(antiChrono);
+    return dataSorted && dataSorted.length
+      ? dataSorted.map((bill) => row(bill)).join('')
+      : '';
+  } else {
+    console.log('empty data');
+  }
 };
 
 export default ({ data: bills, loading, error }) => {

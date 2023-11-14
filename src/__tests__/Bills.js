@@ -9,10 +9,11 @@ import { bills } from '../fixtures/bills.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
 import router from '../app/Router.js';
+import mockStore from '../__mocks__/store';
 // Importing extend-expect to enhance Jest assertions with additional matchers
 import '@testing-library/jest-dom/extend-expect';
 
-// Tests for BillsUi.js
+// Tests for view - BillsUi.js
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
     // Test to ensure the window icon in vertical layout is highlighted
@@ -78,9 +79,9 @@ describe('Given I am connected as an employee', () => {
   });
 });
 
-// Tests for Bills.js
+// Tests for container Bills.js
 describe('Given I am connected as an employee', () => {
-  describe('When I click on eye icon', () => {
+  describe('When I am on the Bills page, and I click on eye icon', () => {
     test('Should open a modal, and the displayed file should be present in the document', async () => {
       // Mock local storage for employee authentication
       Object.defineProperty(window, 'localStorage', {
@@ -131,6 +132,68 @@ describe('Given I am connected as an employee', () => {
       // Check if the displayed image URL matches the expected URL from the sample data
       const expectedImageUrl = bills[0].fileUrl;
       expect(modalImage).toHaveAttribute('src', expectedImageUrl);
+    });
+  });
+
+  // Test to ensure redirection to New Bill page on click
+  describe('When I am on Bills page, and I click on new bill', () => {
+    test('Then I should be redirected to the New Bill page with the title "Envoyer une note de frais"', async () => {
+      // Mock local storage for employee authentication
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+      });
+      window.localStorage.setItem(
+        'user',
+        JSON.stringify({
+          type: 'Employee',
+        })
+      );
+
+      // Set up the Bills UI with sample data
+      document.body.innerHTML = BillsUI({ data: bills });
+
+      // Define a navigation function for route changes
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      // Create a Bills container instance
+      const billsContainer = new Bills({
+        document,
+        onNavigate,
+        store: null,
+        localStorage: window.localStorage,
+      });
+
+      const btnNewBill = screen.getByTestId('btn-new-bill');
+      expect(btnNewBill).toBeTruthy();
+
+      // Click on the "New Bill" button
+      fireEvent.click(btnNewBill);
+      // Assert that the user is redirected to the New Bill page with the correct title
+      expect(screen.getByText('Envoyer une note de frais')).toBeTruthy();
+    });
+  });
+  describe('When I am on Bills page, I see the data ', () => {
+    test('should fetch bills from the store and return a non-empty array', async () => {
+      // Define a navigation function for route changes
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      // Create a Bills container instance
+      const billsContainer = new Bills({
+        document: document,
+        onNavigate: onNavigate,
+        store: mockStore,
+        localStorage: localStorageMock,
+      });
+
+      // Call the getBills method
+      const bills = await billsContainer.getBills();
+      // Assert that the result is an array and not empty
+      expect(Array.isArray(bills)).toBe(true);
+      expect(bills.length).toBeGreaterThan(0);
     });
   });
 });

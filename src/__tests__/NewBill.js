@@ -24,11 +24,10 @@ describe('Given I am connected as an employee', () => {
         document.body.innerHTML = ROUTES({ pathname });
       };
 
-      const store = mockStore;
       const newBill = new NewBill({
         document,
         onNavigate,
-        store,
+        store: mockStore,
         localStorage,
       });
 

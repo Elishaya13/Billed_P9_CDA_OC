@@ -5,15 +5,18 @@
 import { fireEvent, screen, waitFor } from '@testing-library/dom';
 import BillsUI from '../views/BillsUI.js';
 import Bills from '../containers/Bills.js';
+import mockStore from '../__mocks__/store.js';
 import { bills } from '../fixtures/bills.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
 import router from '../app/Router.js';
-import mockStore from '../__mocks__/store';
+
 // Importing extend-expect to enhance Jest assertions with additional matchers
 import '@testing-library/jest-dom/extend-expect';
 
-// Tests for view - BillsUi.js
+jest.mock('../app/store', () => mockStore);
+
+// -- Tests for view - BillsUi.js -- //
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
     // Test to ensure the window icon in vertical layout is highlighted
@@ -79,7 +82,7 @@ describe('Given I am connected as an employee', () => {
   });
 });
 
-// Tests for container Bills.js
+// -- Tests for container Bills.js -- //
 describe('Given I am connected as an employee', () => {
   describe('When I am on the Bills page, and I click on eye icon', () => {
     test('Should open a modal, and the displayed file should be present in the document', async () => {
@@ -174,26 +177,119 @@ describe('Given I am connected as an employee', () => {
       expect(screen.getByText('Envoyer une note de frais')).toBeTruthy();
     });
   });
-  describe('When I am on Bills page, I see the data ', () => {
-    test('should fetch bills from the store and return a non-empty array', async () => {
-      // Define a navigation function for route changes
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
 
-      // Create a Bills container instance
-      const billsContainer = new Bills({
-        document: document,
-        onNavigate: onNavigate,
-        store: mockStore,
-        localStorage: localStorageMock,
-      });
+  // -- Test unitaire method getBills -- //
+  describe('When I am on Bills page and the getBills method is called ', () => {
+    // Define a navigation function for route changes
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
 
+    // Create a Bills container instance
+    const billsContainer = new Bills({
+      document: document,
+      onNavigate: onNavigate,
+      store: mockStore,
+      localStorage: localStorageMock,
+    });
+    test('should return an array of 4 objects', async () => {
       // Call the getBills method
       const bills = await billsContainer.getBills();
-      // Assert that the result is an array and not empty
+      // Assert that the result is an array with a length of 4
       expect(Array.isArray(bills)).toBe(true);
-      expect(bills.length).toBeGreaterThan(0);
+      expect(bills.length).toBe(4);
+    });
+    test('should return dates formatted correctly', async () => {
+      const bills = await billsContainer.getBills();
+      expect(bills[0].date).toEqual('4 Avr. 04');
+    });
+    test('should return unformatted date if the date is invalid', async () => {
+      jest.spyOn(mockStore, 'bills').mockImplementationOnce(() => {
+        const billsList = {
+          list() {
+            return Promise.resolve([
+              {
+                status: 'pending',
+                date: 'invalid date',
+              },
+            ]);
+          },
+        };
+        return billsList;
+      });
+      // Call the getBills method
+      const billsArray = await billsContainer.getBills();
+      // Assert that the date is returned unformatted for invalid input
+      expect(billsArray[0].date).toEqual('invalid date');
+    });
+  });
+});
+
+// -- Test d'intégration GET --
+describe('Given I am a user connected as Employee', () => {
+  describe('When I navigate on Bill page', () => {
+    test('Then, fetches bills from mock API GET', async () => {
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          type: 'Employee',
+          email: 'a@a',
+        })
+      );
+      const root = document.createElement('div');
+      root.setAttribute('id', 'root');
+      document.body.appendChild(root);
+      router();
+      window.onNavigate(ROUTES_PATH.Bills);
+      await waitFor(() => screen.getByText('Mes notes de frais'));
+      const contentPending = screen.getByText('En attente');
+      expect(contentPending).toBeTruthy();
+    });
+    describe('When an error occurs on API', () => {
+      beforeEach(() => {
+        jest.spyOn(mockStore, 'bills');
+        Object.defineProperty(window, 'localStorage', {
+          value: localStorageMock,
+        });
+        window.localStorage.setItem(
+          'user',
+          JSON.stringify({
+            type: 'Employee',
+            email: 'a@a',
+          })
+        );
+        const root = document.createElement('div');
+        root.setAttribute('id', 'root');
+        document.body.appendChild(root);
+        router();
+      });
+      test('fetches bills from an API and fails with 404 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => {
+          return {
+            list: () => {
+              return Promise.reject(new Error('Erreur 404'));
+            },
+          };
+        });
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = screen.getByText(/Erreur 404/);
+        expect(message).toBeTruthy();
+      });
+      test('fetches messages from an API and fails with 500 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => {
+          return {
+            list: () => {
+              return Promise.reject(new Error('Erreur 500'));
+            },
+          };
+        });
+
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = screen.getByText(/Erreur 500/);
+        expect(message).toBeTruthy();
+      });
     });
   });
 });

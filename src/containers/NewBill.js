@@ -15,12 +15,14 @@ export default class NewBill {
     this.fileUrl = null;
     this.fileName = null;
     this.billId = null;
+    this.isFormImgValid = false;
     new Logout({ document, localStorage, onNavigate });
   }
   handleChangeFile = (e) => {
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
+    const fileName = file.name;
     const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const fileErrorMessage = this.document.querySelector('#fileErrorMessage');
     const submitButton = this.document.querySelector(
@@ -31,34 +33,24 @@ export default class NewBill {
       fileErrorMessage.textContent =
         'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.';
       submitButton.disabled = true;
+      this.isFormImgValid = false;
 
       return;
     } else {
       fileErrorMessage.textContent = '';
       submitButton.disabled = false;
-    }
-    const filePath = e.target.value.split(/\\/g);
-    const fileName = filePath[filePath.length - 1];
-    const formData = new FormData();
-    const email = JSON.parse(localStorage.getItem('user')).email;
-    formData.append('file', file);
-    formData.append('email', email);
 
-    this.store
-      .bills()
-      .create({
-        data: formData,
-        headers: {
-          noContentType: true,
-        },
-      })
-      .then(({ fileUrl, key }) => {
-        console.log(fileUrl);
-        this.billId = key;
-        this.fileUrl = fileUrl;
-        this.fileName = fileName;
-      })
-      .catch((error) => console.error(error));
+      const formData = new FormData();
+      const email = JSON.parse(localStorage.getItem('user')).email;
+
+      formData.append('file', file);
+      formData.append('email', email);
+      this.formData = formData;
+      this.fileName = fileName;
+      this.isFormImgValid = true;
+
+      //Remove the preview code to change the update data only onsubmit
+    }
   };
   handleSubmit = (e) => {
     e.preventDefault();
@@ -82,8 +74,25 @@ export default class NewBill {
       fileName: this.fileName,
       status: 'pending',
     };
-    this.updateBill(bill);
-    this.onNavigate(ROUTES_PATH['Bills']);
+    if (this.isFormImgValid) {
+      this.store
+        .bills()
+        .create({
+          data: this.formData,
+          headers: {
+            noContentType: true,
+          },
+        })
+        .then(({ fileUrl, key }) => {
+          console.log(fileUrl);
+          this.billId = key;
+          this.fileUrl = fileUrl;
+        })
+        .then(() => {
+          this.updateBill(bill);
+        })
+        .catch((error) => console.error(error));
+    }
   };
 
   // not need to cover this function by tests

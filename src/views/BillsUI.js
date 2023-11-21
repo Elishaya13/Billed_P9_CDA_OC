@@ -1,7 +1,6 @@
 import VerticalLayout from './VerticalLayout.js';
 import ErrorPage from './ErrorPage.js';
 import LoadingPage from './LoadingPage.js';
-
 import Actions from './Actions.js';
 
 const row = (bill) => {
@@ -21,9 +20,11 @@ const row = (bill) => {
 
 const rows = (data) => {
   if (data) {
-    const antiChrono = (a, b) => (a.date < b.date ? 1 : -1);
+    const antiChrono = (a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime();
     const dataArray = [...data];
     const dataSorted = dataArray.sort(antiChrono);
+
     return dataSorted && dataSorted.length
       ? dataSorted.map((bill) => row(bill)).join('')
       : '';

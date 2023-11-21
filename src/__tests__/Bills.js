@@ -161,7 +161,7 @@ describe('Given I am connected as an employee', () => {
       };
 
       // Create a Bills container instance
-      const billsContainer = new Bills({
+      new Bills({
         document,
         onNavigate,
         store: null,

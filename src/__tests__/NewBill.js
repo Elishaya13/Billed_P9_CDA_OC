@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 import '@testing-library/jest-dom';
-import { fireEvent, screen, waitFor } from '@testing-library/dom';
+import { screen } from '@testing-library/dom';
 import mockStore from '../__mocks__/store.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
-import NewBillUI from '../views/NewBillUI.js';
 import NewBill from '../containers/NewBill.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
+import userEvent from '@testing-library/user-event';
 
 import router from '../app/Router.js';
 
@@ -52,7 +52,8 @@ describe('Given I am connected as an employee', () => {
       expect(screen.getByTestId('form-new-bill')).toBeTruthy();
       expect(screen.getAllByText('Envoyer une note de frais')).toBeTruthy();
     });
-    //-- FORM TESTS --//
+
+    //-- Form field testS --//
     test('Then the form should have a field for expense type, datepicker, amount, pct and file, which would be required', () => {
       const expenseType = screen.getByTestId('expense-type');
       expect(expenseType).toBeTruthy();
@@ -121,7 +122,7 @@ describe('Given I am connected as an employee', () => {
       document.body.innerHTML = '';
     });
 
-    test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', () => {
+    test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
@@ -132,25 +133,20 @@ describe('Given I am connected as an employee', () => {
         localStorage,
       });
 
-      const handleChangeFile = jest.fn(() => newBill.handleChangeFile);
+      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
       const fileInput = screen.getByTestId('file');
 
-      fileInput.addEventListener('change', handleChangeFile);
-      fireEvent.change(fileInput, {
-        target: {
-          files: [
-            new File(['valideFile.png'], 'valideFile.png', {
-              type: 'image/png',
-            }),
-          ],
-        },
+      const file = new File(['valideFile.png'], 'valideFile.png', {
+        type: 'image/png',
       });
+
+      await userEvent.upload(fileInput, file);
 
       const submitBtn = screen.getByTestId('submit-button');
       const fileErrorMessage = screen.getByTestId('fileErrorMessage');
 
       expect(handleChangeFile).toHaveBeenCalled();
-      expect(fileInput.files[0].name).toBe('valideFile.png');
+      expect(fileInput.files[0]).toEqual(file);
 
       // Check if the button is clickable
       expect(submitBtn).not.toBeDisabled();
@@ -159,7 +155,7 @@ describe('Given I am connected as an employee', () => {
       expect(fileErrorMessage.textContent).toBe('');
     });
 
-    test('Then and I upload an invalid format file, the file name should be displayed into the input and submit button is disabled and error message is displayed', () => {
+    test('Then and I upload an invalid format file, the file name should be displayed into the input and submit button is disabled and error message is displayed', async () => {
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
@@ -171,24 +167,18 @@ describe('Given I am connected as an employee', () => {
         localStorage,
       });
 
-      const handleChangeFile = jest.fn(() => newBill.handleChangeFile);
+      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
       const fileInput = screen.getByTestId('file');
+      const file = new File(['invalideFile.pdf'], 'invalideFile.pdf', {
+        type: 'application/pdf',
+      });
+      await userEvent.upload(fileInput, file);
+
       const submitBtn = screen.getByTestId('submit-button');
       const fileErrorMessage = screen.getByTestId('fileErrorMessage');
 
-      fileInput.addEventListener('change', handleChangeFile);
-      fireEvent.change(fileInput, {
-        target: {
-          files: [
-            new File(['invalideFile.pdf'], 'invalideFile.pdf', {
-              type: 'application/pdf',
-            }),
-          ],
-        },
-      });
-
       expect(handleChangeFile).toHaveBeenCalled();
-      expect(fileInput.files[0].name).toBe('invalideFile.pdf');
+      expect(fileInput.files[0]).toEqual(file);
 
       // Check if the button is not clickable and if an error message is displayed
       expect(submitBtn).toBeDisabled();
@@ -198,3 +188,4 @@ describe('Given I am connected as an employee', () => {
     });
   });
 });
+// to do - test POST test handlesubmit - 404 - 500

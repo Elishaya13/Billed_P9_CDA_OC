@@ -13,7 +13,9 @@ import router from '../app/Router.js';
 
 jest.mock('../app/store', () => mockStore);
 
-// * TESTS UI * //
+// *-- -------- --* //
+// *-- TESTS UI --* //
+// *-- -------- --* //
 describe('Given I am connected as an employee', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'localStorage', {
@@ -96,7 +98,9 @@ describe('Given I am connected as an employee', () => {
   });
 });
 
+// *-- ------------------ --* //
 // *-- INTEGRATIONS TESTS --* //
+// *-- ------------------ --* //
 describe('Given I am connected as an employee', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'localStorage', {
@@ -120,39 +124,6 @@ describe('Given I am connected as an employee', () => {
     });
     afterEach(() => {
       document.body.innerHTML = '';
-    });
-
-    test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage,
-      });
-
-      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
-      const fileInput = screen.getByTestId('file');
-
-      const file = new File(['valideFile.png'], 'valideFile.png', {
-        type: 'image/png',
-      });
-
-      await userEvent.upload(fileInput, file);
-
-      const submitBtn = screen.getByTestId('submit-button');
-      const fileErrorMessage = screen.getByTestId('fileErrorMessage');
-
-      expect(handleChangeFile).toHaveBeenCalled();
-      expect(fileInput.files[0]).toEqual(file);
-
-      // Check if the button is clickable
-      expect(submitBtn).not.toBeDisabled();
-
-      // Check if error message is empty
-      expect(fileErrorMessage.textContent).toBe('');
     });
 
     test('Then and I upload an invalid format file, the file name should be displayed into the input and submit button is disabled and error message is displayed', async () => {
@@ -186,6 +157,249 @@ describe('Given I am connected as an employee', () => {
         'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.'
       );
     });
+
+    test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage,
+      });
+
+      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
+      const fileInput = screen.getByTestId('file');
+
+      const file = new File(['valideFile.png'], 'valideFile.png', {
+        type: 'image/png',
+      });
+
+      await userEvent.upload(fileInput, file);
+      expect(handleChangeFile).toHaveBeenCalled();
+      expect(fileInput.files[0]).toEqual(file);
+
+      const submitBtn = screen.getByTestId('submit-button');
+      const fileErrorMessage = screen.getByTestId('fileErrorMessage');
+
+      // Check if the button is clickable
+      expect(submitBtn).not.toBeDisabled();
+
+      // Check if error message is empty
+      expect(fileErrorMessage.textContent).toBe('');
+    });
+
+    test('Then I click on submit button, the handleSubmit function should be called', () => {
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage,
+      });
+
+      const formNewBill = screen.getByTestId('form-new-bill');
+      const submitBtn = screen.getByTestId('submit-button');
+      const handleSubmit = spyOn(newBill, 'handleSubmit');
+
+      //Check if the form is in the document
+      expect(formNewBill).toBeInTheDocument();
+
+      // Check if the button is clickable
+      expect(submitBtn).not.toBeDisabled();
+
+      userEvent.click(submitBtn);
+      // Check if the submit method is call
+      expect(handleSubmit).toHaveBeenCalled();
+    });
   });
 });
-// to do - test POST test handlesubmit - 404 - 500
+
+// *-- ---- --* //
+// *-- POST --* //
+// *-- ---- --* //
+describe('Given I am connected as an employee', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+    });
+    window.localStorage.setItem(
+      'user',
+      JSON.stringify({
+        type: 'Employee',
+        email: 'a@a',
+      })
+    );
+  });
+  beforeEach(() => {
+    const root = document.createElement('div');
+    root.setAttribute('id', 'root');
+    document.body.append(root);
+    router();
+  });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  test('Add a bill from mock API POST', async () => {
+    const spy = jest.spyOn(mockStore, 'bills');
+    const bill = {
+      id: '47qAXb6fIm2zOKkLzMro',
+      vat: '80',
+      fileUrl:
+        'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+      status: 'pending',
+      type: 'Hôtel et logement',
+      commentary: 'séminaire billed',
+      name: 'encore',
+      fileName: 'preview-facture-free-201801-pdf-1.jpg',
+      date: '2004-04-04',
+      amount: 400,
+      commentAdmin: 'ok',
+      email: 'a@a',
+      pct: 20,
+    };
+    const formData = {
+      fileUrl: 'https://localhost:3456/images/test.jpg',
+      key: '1234',
+    };
+    const createBill = await mockStore.bills().create(bill);
+    const postBill = await mockStore.bills().update(bill);
+    expect(spy).toHaveBeenCalled();
+    expect(createBill).toEqual(formData);
+    expect(postBill).toEqual(bill);
+  });
+
+  // *--API error messages--*//
+  describe('When an error occurs on API', () => {
+    // *--Error 404--* //
+    test('Then new bill is added to the API and fails with 404 message error', async () => {
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list: () => {
+            return Promise.reject(new Error('Erreur 404")'));
+          },
+        };
+      });
+      window.onNavigate(ROUTES_PATH.Bills);
+      await new Promise(process.nextTick); // Waits for the completion of all pending asynchronous operations.
+      const message = await screen.getByText(/Erreur 404/);
+      expect(message).toBeTruthy();
+    });
+
+    // *--Error 500--* //
+    test('Then new bill is added to the API and fails with 500 message error', async () => {
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list: () => {
+            return Promise.reject(new Error('Erreur 500")'));
+          },
+        };
+      });
+      window.onNavigate(ROUTES_PATH.Bills);
+      await new Promise(process.nextTick); // Waits for the completion of all pending asynchronous operations.
+      const message = await screen.getByText(/Erreur 500/);
+      expect(message).toBeTruthy();
+    });
+  });
+});
+
+//_________________________________//
+
+// *-- POST --* //
+// describe('Given I am connected as an employee', () => {
+//   beforeAll(() => {
+//     Object.defineProperty(window, 'localStorage', {
+//       value: localStorageMock,
+//     });
+//     window.localStorage.setItem(
+//       'user',
+//       JSON.stringify({
+//         type: 'Employee',
+//         email: 'a@a',
+//       })
+//     );
+//   });
+//   beforeEach(() => {
+//     const root = document.createElement('div');
+//     root.setAttribute('id', 'root');
+//     document.body.append(root);
+//     router();
+// window.onNavigate(ROUTES_PATH.NewBill);
+// });
+// afterEach(() => {
+//   document.body.innerHTML = '';
+// });
+// describe('When I am on NewBill Page', () => {
+
+// test('Add a bill from mock API POST', async () => {
+// const onNavigate = (pathname) => {
+//   document.body.innerHTML = ROUTES({ pathname });
+// };
+// const newBill = new NewBill({
+//   document,
+//   onNavigate,
+//   store: mockStore,
+//   localStorage,
+// });
+
+//   const spy = jest.spyOn(mockStore, 'bills');
+//   const bill = {
+//     id: '47qAXb6fIm2zOKkLzMro',
+//     vat: '80',
+//     fileUrl:
+//       'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+//     status: 'pending',
+//     type: 'Hôtel et logement',
+//     commentary: 'séminaire billed',
+//     name: 'encore',
+//     fileName: 'preview-facture-free-201801-pdf-1.jpg',
+//     date: '2004-04-04',
+//     amount: 400,
+//     commentAdmin: 'ok',
+//     email: 'a@a',
+//     pct: 20,
+//   };
+//   const postBill = await mockStore.bills().update(bill);
+//   expect(spy).toHaveBeenCalled();
+//   expect(postBill).toEqual(bill);
+// });
+
+// *--API error messages--*//
+// describe('When an error occurs on API', () => {
+// *--Error 404--* //
+//     test('Then new bill is added to the API and fails with 404 message error', async () => {
+//       mockStore.bills.mockImplementationOnce(() => {
+//         return {
+//           list: () => {
+//             return Promise.reject(new Error('Erreur 404")'));
+//           },
+//         };
+//       });
+//       window.onNavigate(ROUTES_PATH.Bills);
+//       await new Promise(process.nextTick);
+//       const message = await screen.getByText(/Erreur 404/);
+//       expect(message).toBeTruthy();
+//     });
+
+//     // *--Error 500--* //
+//     test('Then new bill is added to the API and fails with 404 message error', async () => {
+//       mockStore.bills.mockImplementationOnce(() => {
+//         return {
+//           list: () => {
+//             return Promise.reject(new Error('Erreur 500")'));
+//           },
+//         };
+//       });
+//       window.onNavigate(ROUTES_PATH.Bills);
+//       await new Promise(process.nextTick);
+//       const message = await screen.getByText(/Erreur 500/);
+//       expect(message).toBeTruthy();
+//     });
+//   });
+// });
+// });

@@ -54,8 +54,10 @@ export default class NewBill {
   };
   handleSubmit = (e) => {
     e.preventDefault();
+    console.log('Inside handleSubmit', e);
     // console.log('e.target.querySelector(`input[data-testid="datepicker"]`).value', e.target.querySelector(`input[data-testid="datepicker"]`).value)
     const email = JSON.parse(localStorage.getItem('user')).email;
+    console.log(email, 'email');
     const bill = {
       email,
       type: e.target.querySelector(`select[data-testid="expense-type"]`).value,
@@ -74,6 +76,7 @@ export default class NewBill {
       fileName: this.fileName,
       status: 'pending',
     };
+    console.log('Constructed bill object', bill);
     if (this.isFormImgValid) {
       this.store
         .bills()
@@ -89,6 +92,7 @@ export default class NewBill {
           this.fileUrl = fileUrl;
         })
         .then(() => {
+          console.log('avant update', bill);
           this.updateBill(bill);
         })
         .catch((error) => console.error(error));
@@ -101,7 +105,8 @@ export default class NewBill {
       this.store
         .bills()
         .update({ data: JSON.stringify(bill), selector: this.billId })
-        .then(() => {
+        .then((res) => {
+          console.log('res', res);
           this.onNavigate(ROUTES_PATH['Bills']);
         })
         .catch((error) => console.error(error));

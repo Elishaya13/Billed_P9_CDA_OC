@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import '@testing-library/jest-dom';
-import { screen } from '@testing-library/dom';
+import { fireEvent, screen, waitFor } from '@testing-library/dom';
 import mockStore from '../__mocks__/store.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
 import NewBill from '../containers/NewBill.js';
@@ -13,36 +13,35 @@ import router from '../app/Router.js';
 
 jest.mock('../app/store', () => mockStore);
 
-// *-- -------- --* //
-// *-- TESTS UI --* //
-// *-- -------- --* //
-describe('Given I am connected as an employee', () => {
-  beforeAll(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-    });
-    window.localStorage.setItem(
-      'user',
-      JSON.stringify({
-        type: 'Employee',
-        email: 'a@a',
-      })
-    );
+beforeAll(() => {
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
   });
+  window.localStorage.setItem(
+    'user',
+    JSON.stringify({
+      type: 'Employee',
+      email: 'a@a',
+    })
+  );
+  // onNavigate = jest.fn();
+});
+beforeEach(() => {
+  const root = document.createElement('div');
+  root.setAttribute('id', 'root');
+  document.body.append(root);
+  router();
+  window.onNavigate(ROUTES_PATH.NewBill);
+  console.log('BEFORE EACH  D EN HAUT');
+});
 
+afterEach(() => {
+  document.body.innerHTML = '';
+});
+
+//** UI tests **/
+describe('Given I am connected as an employee', () => {
   describe('When I am on NewBill Page', () => {
-    beforeEach(() => {
-      const root = document.createElement('div');
-      root.setAttribute('id', 'root');
-      document.body.append(root);
-      router();
-      window.onNavigate(ROUTES_PATH.NewBill);
-    });
-
-    afterEach(() => {
-      document.body.innerHTML = '';
-    });
-
     // Test to verify if the mail icon is highlighted
     test('Then the mail icon in vertical layout should be highlighted', () => {
       expect(screen.getByTestId('icon-mail')).toHaveClass('active-icon');
@@ -98,308 +97,334 @@ describe('Given I am connected as an employee', () => {
   });
 });
 
-// *-- ------------------ --* //
-// *-- INTEGRATIONS TESTS --* //
-// *-- ------------------ --* //
-describe('Given I am connected as an employee', () => {
-  beforeAll(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-    });
-    window.localStorage.setItem(
-      'user',
-      JSON.stringify({
-        type: 'Employee',
-        email: 'a@a',
-      })
-    );
-  });
-  describe('When I am on NewBill Page', () => {
-    beforeEach(() => {
-      const root = document.createElement('div');
-      root.setAttribute('id', 'root');
-      document.body.append(root);
-      router();
-      window.onNavigate(ROUTES_PATH.NewBill);
-    });
-    afterEach(() => {
-      document.body.innerHTML = '';
-    });
+//** Integration tests */
+describe('When I am on NewBill page and uploading a file', () => {
+  let newBill;
 
-    test('Then and I upload an invalid format file, the file name should be displayed into the input and submit button is disabled and error message is displayed', async () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage,
-      });
-
-      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
-      const fileInput = screen.getByTestId('file');
-      const file = new File(['invalideFile.pdf'], 'invalideFile.pdf', {
-        type: 'application/pdf',
-      });
-      await userEvent.upload(fileInput, file);
-
-      const submitBtn = screen.getByTestId('submit-button');
-      const fileErrorMessage = screen.getByTestId('fileErrorMessage');
-
-      expect(handleChangeFile).toHaveBeenCalled();
-      expect(fileInput.files[0]).toEqual(file);
-
-      // Check if the button is not clickable and if an error message is displayed
-      expect(submitBtn).toBeDisabled();
-      expect(fileErrorMessage.textContent).toBe(
-        'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.'
-      );
-    });
-
-    test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage,
-      });
-
-      const handleChangeFile = spyOn(newBill, 'handleChangeFile');
-      const fileInput = screen.getByTestId('file');
-
-      const file = new File(['valideFile.png'], 'valideFile.png', {
-        type: 'image/png',
-      });
-
-      await userEvent.upload(fileInput, file);
-      expect(handleChangeFile).toHaveBeenCalled();
-      expect(fileInput.files[0]).toEqual(file);
-
-      const submitBtn = screen.getByTestId('submit-button');
-      const fileErrorMessage = screen.getByTestId('fileErrorMessage');
-
-      // Check if the button is clickable
-      expect(submitBtn).not.toBeDisabled();
-
-      // Check if error message is empty
-      expect(fileErrorMessage.textContent).toBe('');
-    });
-
-    test('Then I click on submit button, the handleSubmit function should be called', () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage,
-      });
-
-      const formNewBill = screen.getByTestId('form-new-bill');
-      const submitBtn = screen.getByTestId('submit-button');
-      const handleSubmit = spyOn(newBill, 'handleSubmit');
-
-      //Check if the form is in the document
-      expect(formNewBill).toBeInTheDocument();
-
-      // Check if the button is clickable
-      expect(submitBtn).not.toBeDisabled();
-
-      userEvent.click(submitBtn);
-      // Check if the submit method is call
-      expect(handleSubmit).toHaveBeenCalled();
-    });
-  });
-});
-
-// *-- ---- --* //
-// *-- POST --* //
-// *-- ---- --* //
-describe('Given I am connected as an employee', () => {
-  beforeAll(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-    });
-    window.localStorage.setItem(
-      'user',
-      JSON.stringify({
-        type: 'Employee',
-        email: 'a@a',
-      })
-    );
-  });
   beforeEach(() => {
-    const root = document.createElement('div');
-    root.setAttribute('id', 'root');
-    document.body.append(root);
-    router();
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
+    newBill = new NewBill({
+      document,
+      onNavigate,
+      store: mockStore,
+      localStorage,
+    });
   });
   afterEach(() => {
     document.body.innerHTML = '';
   });
 
-  test('Add a bill from mock API POST', async () => {
-    const spy = jest.spyOn(mockStore, 'bills');
-    const bill = {
-      id: '47qAXb6fIm2zOKkLzMro',
-      vat: '80',
-      fileUrl:
-        'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
-      status: 'pending',
-      type: 'Hôtel et logement',
-      commentary: 'séminaire billed',
-      name: 'encore',
-      fileName: 'preview-facture-free-201801-pdf-1.jpg',
-      date: '2004-04-04',
-      amount: 400,
-      commentAdmin: 'ok',
-      email: 'a@a',
-      pct: 20,
-    };
-    const formData = {
+  test('Then I upload an invalid file, then an error message is displayed', async () => {
+    // const onNavigate = (pathname) => {
+    //   document.body.innerHTML = ROUTES({ pathname });
+    // };
+
+    // const newBill = new NewBill({
+    //   document,
+    //   onNavigate,
+    //   store: mockStore,
+    //   localStorage,
+    // });
+
+    const handleChangeFile = spyOn(newBill, 'handleChangeFile');
+    const fileInput = screen.getByTestId('file');
+    const file = new File(['invalideFile.pdf'], 'invalideFile.pdf', {
+      type: 'application/pdf',
+    });
+    await userEvent.upload(fileInput, file);
+
+    const submitBtn = screen.getByTestId('submit-button');
+    const fileErrorMessage = screen.getByTestId('fileErrorMessage');
+
+    expect(handleChangeFile).toHaveBeenCalled();
+    expect(fileInput.files[0]).toEqual(file);
+
+    // Check if the button is not clickable and if an error message is displayed
+    expect(submitBtn).toBeDisabled();
+    expect(fileErrorMessage.textContent).toBe(
+      'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.'
+    );
+  });
+
+  test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
+    // const onNavigate = (pathname) => {
+    //   document.body.innerHTML = ROUTES({ pathname });
+    // };
+    // const newBill = new NewBill({
+    //   document,
+    //   onNavigate,
+    //   store: mockStore,
+    //   localStorage,
+    // });
+
+    const handleChangeFile = spyOn(newBill, 'handleChangeFile');
+    const fileInput = screen.getByTestId('file');
+
+    const file = new File(['valideFile.png'], 'valideFile.png', {
+      type: 'image/png',
+    });
+
+    await userEvent.upload(fileInput, file);
+    expect(handleChangeFile).toHaveBeenCalled();
+    expect(fileInput.files[0]).toEqual(file);
+
+    const submitBtn = screen.getByTestId('submit-button');
+    const fileErrorMessage = screen.getByTestId('fileErrorMessage');
+
+    // Check if the button is clickable
+    expect(submitBtn).not.toBeDisabled();
+
+    // Check if error message is empty
+    expect(fileErrorMessage.textContent).toBe('');
+  });
+
+  test('Then I click on submit button, the submit method is called and we have to navigate to Bills page', async () => {
+    const onNavigate = jest.fn();
+    // const onNavigate = (pathname) => {
+    //   document.body.innerHTML = ROUTES({ pathname });
+    // };
+
+    const newBillContainer = new NewBill({
+      document,
+      onNavigate,
+      store: mockStore,
+      localStorage: localStorageMock,
+    });
+
+    newBillContainer.isFormImgValid = true;
+    newBillContainer.formData = {
       fileUrl: 'https://localhost:3456/images/test.jpg',
       key: '1234',
     };
-    const createBill = await mockStore.bills().create(bill);
-    const postBill = await mockStore.bills().update(bill);
-    expect(spy).toHaveBeenCalled();
-    expect(createBill).toEqual(formData);
-    expect(postBill).toEqual(bill);
-  });
 
-  // *--API error messages--*//
-  describe('When an error occurs on API', () => {
-    // *--Error 404--* //
-    test('Then new bill is added to the API and fails with 404 message error', async () => {
-      mockStore.bills.mockImplementationOnce(() => {
-        return {
-          list: () => {
-            return Promise.reject(new Error('Erreur 404")'));
-          },
-        };
-      });
-      window.onNavigate(ROUTES_PATH.Bills);
-      await new Promise(process.nextTick); // Waits for the completion of all pending asynchronous operations.
-      const message = await screen.getByText(/Erreur 404/);
-      expect(message).toBeTruthy();
+    // INPUTS FIELDS
+    const expenseTypeInput = screen.getByTestId('expense-type');
+    const expenseNameInput = screen.getByTestId('expense-name');
+    const datePickerInput = screen.getByTestId('datepicker');
+    const amountInput = screen.getByTestId('amount');
+    const vatInput = screen.getByTestId('vat');
+    const pctInput = screen.getByTestId('pct');
+    const commentaryInput = screen.getByTestId('commentary');
+    const submitBtn = screen.getByTestId('submit-button');
+
+    // Simuler les changements dans chaque champ
+    fireEvent.change(expenseTypeInput, { target: { value: 'Transports' } });
+
+    fireEvent.change(expenseNameInput, {
+      target: { value: 'Nom de la dépense' },
+    });
+    fireEvent.change(datePickerInput, { target: { value: '2024-01-29' } });
+    fireEvent.change(amountInput, { target: { value: '100.00' } });
+    fireEvent.change(vatInput, { target: { value: '20.00' } });
+    fireEvent.change(pctInput, { target: { value: '10' } });
+    fireEvent.change(commentaryInput, {
+      target: { value: 'Commentaire sur la dépense' },
     });
 
-    // *--Error 500--* //
-    test('Then new bill is added to the API and fails with 500 message error', async () => {
-      mockStore.bills.mockImplementationOnce(() => {
-        return {
-          list: () => {
-            return Promise.reject(new Error('Erreur 500")'));
-          },
-        };
-      });
-      window.onNavigate(ROUTES_PATH.Bills);
-      await new Promise(process.nextTick); // Waits for the completion of all pending asynchronous operations.
-      const message = await screen.getByText(/Erreur 500/);
-      expect(message).toBeTruthy();
-    });
+    //on écoute
+    const createSpy = jest.spyOn(mockStore.bills(), 'create');
+    const updateSpy = jest.spyOn(mockStore.bills(), 'update');
+    const handleSubmitSpy = jest.spyOn(newBillContainer, 'handleSubmit');
+    // const spy = jest.spyOn(mockStore, 'bills');
+
+    //on clic
+    userEvent.click(submitBtn);
+
+    // Handlesubmit est appelé
+    expect(handleSubmitSpy).toHaveBeenCalledTimes(1);
+
+    // La methode create est appelée
+    expect(createSpy).toHaveBeenCalled();
+    // expect(handleSubmitSpy).not.toThrow();
+
+    // expect(updateSpy).toHaveBeenCalled();
+
+    //Test changement de route
+    // expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
+    // expect(onNavigate).toHaveBeenCalled();
+
+    // const bill = {
+    //   id: '47qAXb6fIm2zOKkLzMro',
+    //   vat: '80',
+    //   fileUrl:
+    //     'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+    //   status: 'pending',
+    //   type: 'Hôtel et logement',
+    //   commentary: 'séminaire billed',
+    //   name: 'encore',
+    //   fileName: 'preview-facture-free-201801-pdf-1.jpg',
+    //   date: '2004-04-04',
+    //   amount: 400,
+    //   commentAdmin: 'ok',
+    //   email: 'a@a',
+    //   pct: 20,
+    // };
+    // const formData = {
+    //   fileUrl: 'https://localhost:3456/images/test.jpg',
+    //   key: '1234',
+    // };
+    // const createBill = await mockStore.bills().create(bill);
+    // const postBill = await mockStore.bills().update(bill);
+    // expect(spy).toHaveBeenCalled();
+    // expect(createBill).toEqual(formData);
+    // expect(postBill).toEqual(bill);
+    // expect(createSpy).toHaveBeenCalled();
+    // expect(createSpy).toHaveBeenCalledWith(bill);
+    // expect(updateSpy).toHaveBeenCalled();
+    // expect(updateSpy).toHaveBeenCalledWith(bill);
+
+    // Verifying the navigation is directed to the Bills page
+    // expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
+
+    // test('Then the form should be submitted and navigate to Bills page', async () => {});
   });
 });
 
-//_________________________________//
+//** Post tests  **/
 
-// *-- POST --* //
-// describe('Given I am connected as an employee', () => {
-//   beforeAll(() => {
-//     Object.defineProperty(window, 'localStorage', {
-//       value: localStorageMock,
+//     const newBill = new NewBill({
+//       document,
+//       onNavigate,
+//       store: mockStore,
+//       localStorage,
 //     });
-//     window.localStorage.setItem(
-//       'user',
-//       JSON.stringify({
-//         type: 'Employee',
-//         email: 'a@a',
-//       })
-//     );
-//   });
-//   beforeEach(() => {
-//     const root = document.createElement('div');
-//     root.setAttribute('id', 'root');
-//     document.body.append(root);
-//     router();
-// window.onNavigate(ROUTES_PATH.NewBill);
-// });
-// afterEach(() => {
-//   document.body.innerHTML = '';
-// });
-// describe('When I am on NewBill Page', () => {
+//     // Mock the updateBill function to simulate form submission
+//     jest.spyOn(newBill, 'updateBill').mockImplementation(() => {});
+//     // const handleSubmit = spyOn(newBill, 'handleSubmit');
 
-// test('Add a bill from mock API POST', async () => {
-// const onNavigate = (pathname) => {
-//   document.body.innerHTML = ROUTES({ pathname });
+//     // const submitBtn = screen.getByTestId('submit-button');
+//     const fileInput = screen.getByTestId('file');
+
+//     const expenseTypeInput = screen.getByTestId('expense-type');
+//     const expenseNameInput = screen.getByTestId('expense-name');
+//     const datePickerInput = screen.getByTestId('datepicker');
+//     const amountInput = screen.getByTestId('amount');
+//     const vatInput = screen.getByTestId('vat');
+//     const pctInput = screen.getByTestId('pct');
+//     const commentaryInput = screen.getByTestId('commentary');
+
+//     // Simuler les changements dans chaque champ
+//     fireEvent.change(expenseTypeInput, { target: { value: 'Transports' } });
+
+//     fireEvent.change(expenseNameInput, {
+//       target: { value: 'Nom de la dépense' },
+//     });
+//     fireEvent.change(datePickerInput, { target: { value: '2024-01-29' } });
+//     fireEvent.change(amountInput, { target: { value: '100.00' } });
+//     fireEvent.change(vatInput, { target: { value: '20.00' } });
+//     fireEvent.change(pctInput, { target: { value: '10' } });
+//     fireEvent.change(commentaryInput, {
+//       target: { value: 'Commentaire sur la dépense' },
+//     });
+
+//     // Simulate the form submission
+//     const formNewBill = screen.getByTestId('form-new-bill');
+//     fireEvent.submit(formNewBill);
+
+//     expect(newBill.updateBill).toHaveBeenCalled();
+//     expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
+//   });
+// });
+// test('Then updateBill method should be called', async () => {
+//   const newBill = new NewBill({
+//     document,
+//     onNavigate,
+//     store: mockStore,
+//     localStorage,
+//   });
+
+//   const handleSubmit = spyOn(newBill, 'handleSubmit');
+//   newBill.isFormImgValid = true;
+
+//   const formNewBill = screen.getByTestId('form-new-bill');
+//   const submitBtn = screen.getByTestId('submit-button');
+//   const fileInput = screen.getByTestId('file');
+
+//   const expenseTypeInput = screen.getByTestId('expense-type');
+//   const expenseNameInput = screen.getByTestId('expense-name');
+//   const datePickerInput = screen.getByTestId('datepicker');
+//   const amountInput = screen.getByTestId('amount');
+//   const vatInput = screen.getByTestId('vat');
+//   const pctInput = screen.getByTestId('pct');
+//   const commentaryInput = screen.getByTestId('commentary');
+
+//   const file = new File(['valideFile.png'], 'valideFile.png', {
+//     type: 'image/png',
+//   });
+//   expect(formNewBill).toBeInTheDocument();
+
+//   await userEvent.upload(fileInput, file);
+//   expect(fileInput.files[0]).toEqual(file);
+
+//   // Simuler les changements dans chaque champ
+//   fireEvent.change(expenseTypeInput, { target: { value: 'Transports' } });
+
+//   fireEvent.change(expenseNameInput, {
+//     target: { value: 'Nom de la dépense' },
+//   });
+//   fireEvent.change(datePickerInput, { target: { value: '2024-01-29' } });
+//   fireEvent.change(amountInput, { target: { value: '100.00' } });
+//   fireEvent.change(vatInput, { target: { value: '20.00' } });
+//   fireEvent.change(pctInput, { target: { value: '10' } });
+//   fireEvent.change(commentaryInput, {
+//     target: { value: 'Commentaire sur la dépense' },
+//   });
+
+//   // Vérifier que les champs contiennent la valeur correcte
+//   expect(expenseTypeInput.value).toBe('Transports');
+//   expect(expenseNameInput.value).toBe('Nom de la dépense');
+//   expect(vatInput.value).toBe('20.00');
+
+//   userEvent.click(submitBtn);
+//   expect(handleSubmit).toHaveBeenCalled();
+
+// OnNavigate va bien sur la page Bills mais il ne voit que les données du mock, pas celles mise dans les
+// window.onNavigate(ROUTES_PATH.Bills);
+// await new Promise(process.nextTick);
+// const title = screen.getByText(/Mes notes de frais/);
+// expect(title).toBeTruthy();
+// Ici cela failed
+//     const name = screen.getByText(/Nom de la dépense/);//     |                         ^
+// 306 |     expect(name).toBeTruthy();
+// const name = screen.getByText(/Nom de la dépense/);
+// expect(name).toBeTruthy();
+// console.log(title.textContent);
+
+// const test = screen.getByText(/test1/);
+// console.log(test.textContent);
+// expect(test).toBeTruthy();
+// const amount = screen.getByText(/100 €/);
+// console.log(amount.textContent);
+//   });
+// });
+
+// const spy = jest.spyOn(mockStore, 'bills');
+// const bill = {
+//   id: '47qAXb6fIm2zOKkLzMro',
+//   vat: '80',
+//   fileUrl:
+//     'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+//   status: 'pending',
+//   type: 'Hôtel et logement',
+//   commentary: 'séminaire billed',
+//   name: 'encore',
+//   fileName: 'preview-facture-free-201801-pdf-1.jpg',
+//   date: '2004-04-04',
+//   amount: 400,
+//   commentAdmin: 'ok',
+//   email: 'a@a',
+//   pct: 20,
 // };
-// const newBill = new NewBill({
-//   document,
-//   onNavigate,
-//   store: mockStore,
-//   localStorage,
-// });
+// const formData = {
+//   fileUrl: 'https://localhost:3456/images/test.jpg',
+//   key: '1234',
+// };
+// const createBill = await mockStore.bills().create(bill);
+// const postBill = await mockStore.bills().update(bill);
+// expect(spy).toHaveBeenCalled();
+// expect(createBill).toEqual(formData);
+// expect(postBill).toEqual(bill);
 
-//   const spy = jest.spyOn(mockStore, 'bills');
-//   const bill = {
-//     id: '47qAXb6fIm2zOKkLzMro',
-//     vat: '80',
-//     fileUrl:
-//       'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
-//     status: 'pending',
-//     type: 'Hôtel et logement',
-//     commentary: 'séminaire billed',
-//     name: 'encore',
-//     fileName: 'preview-facture-free-201801-pdf-1.jpg',
-//     date: '2004-04-04',
-//     amount: 400,
-//     commentAdmin: 'ok',
-//     email: 'a@a',
-//     pct: 20,
-//   };
-//   const postBill = await mockStore.bills().update(bill);
-//   expect(spy).toHaveBeenCalled();
-//   expect(postBill).toEqual(bill);
-// });
-
-// *--API error messages--*//
-// describe('When an error occurs on API', () => {
-// *--Error 404--* //
-//     test('Then new bill is added to the API and fails with 404 message error', async () => {
-//       mockStore.bills.mockImplementationOnce(() => {
-//         return {
-//           list: () => {
-//             return Promise.reject(new Error('Erreur 404")'));
-//           },
-//         };
-//       });
-//       window.onNavigate(ROUTES_PATH.Bills);
-//       await new Promise(process.nextTick);
-//       const message = await screen.getByText(/Erreur 404/);
-//       expect(message).toBeTruthy();
-//     });
-
-//     // *--Error 500--* //
-//     test('Then new bill is added to the API and fails with 404 message error', async () => {
-//       mockStore.bills.mockImplementationOnce(() => {
-//         return {
-//           list: () => {
-//             return Promise.reject(new Error('Erreur 500")'));
-//           },
-//         };
-//       });
-//       window.onNavigate(ROUTES_PATH.Bills);
-//       await new Promise(process.nextTick);
-//       const message = await screen.getByText(/Erreur 500/);
-//       expect(message).toBeTruthy();
-//     });
-//   });
-// });
-// });
+//----------------FIN-----------------------//

@@ -69,14 +69,12 @@ const mockedBills = {
     ]);
   },
   create(bill) {
-    console.log('create mockstore + ', bill);
     return Promise.resolve({
       fileUrl: 'https://localhost:3456/images/test.jpg',
       key: '1234',
     });
   },
   update(bill) {
-    console.log('update mock bill +', bill);
     return Promise.resolve({
       id: '47qAXb6fIm2zOKkLzMro',
       vat: '80',
@@ -98,7 +96,6 @@ const mockedBills = {
 
 export default {
   bills() {
-    console.log('store mock bills()');
     return mockedBills;
     //return {}
   },

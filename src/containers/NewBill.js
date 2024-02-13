@@ -16,9 +16,11 @@ export default class NewBill {
     this.fileName = null;
     this.billId = null;
     this.isFormImgValid = false;
+
     new Logout({ document, localStorage, onNavigate });
   }
   handleChangeFile = (e) => {
+    console.log('handlechangefile call + value fromvalid', this.isFormImgValid);
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
@@ -28,15 +30,18 @@ export default class NewBill {
     const submitButton = this.document.querySelector(
       `button[data-testid="submit-button"]`
     );
+
+    // If image format is not valid
     if (!allowedMimeTypes.includes(file.type)) {
       file.value = '';
       fileErrorMessage.textContent =
         'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.';
       submitButton.disabled = true;
-      this.isFormImgValid = false;
-
-      return;
+      console.log('dans l image false');
     } else {
+      // If image format is valid
+      //If the file is valid change the value to true
+
       fileErrorMessage.textContent = '';
       submitButton.disabled = false;
 
@@ -48,16 +53,22 @@ export default class NewBill {
       this.formData = formData;
       this.fileName = fileName;
       this.isFormImgValid = true;
+      console.log('dans limage valid true');
 
-      //Remove the preview code to change the update data only onsubmit
+      //Remove the preview code to change the update data only onsubmit, move it on handlesubmit
     }
   };
   handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Inside handleSubmit', e);
-    // console.log('e.target.querySelector(`input[data-testid="datepicker"]`).value', e.target.querySelector(`input[data-testid="datepicker"]`).value)
+    console.log(
+      'e.target.querySelector(`input[data-testid="datepicker"]`).value',
+      e.target.querySelector(`input[data-testid="datepicker"]`).value
+    );
+    console.log({ e });
+    console.log('HANDELSUBMIT called ');
+    console.log('valid img is', this.isFormImgValid);
+
     const email = JSON.parse(localStorage.getItem('user')).email;
-    console.log(email, 'email');
     const bill = {
       email,
       type: e.target.querySelector(`select[data-testid="expense-type"]`).value,
@@ -76,8 +87,9 @@ export default class NewBill {
       fileName: this.fileName,
       status: 'pending',
     };
-    console.log('Constructed bill object', bill);
     if (this.isFormImgValid) {
+      // if image format is valid call the methods to create the bill and call updateBill methode
+      // code moved in handleSubmit
       this.store
         .bills()
         .create({
@@ -87,15 +99,15 @@ export default class NewBill {
           },
         })
         .then(({ fileUrl, key }) => {
-          console.log(fileUrl);
           this.billId = key;
           this.fileUrl = fileUrl;
         })
         .then(() => {
-          console.log('avant update', bill);
           this.updateBill(bill);
         })
         .catch((error) => console.error(error));
+    } else {
+      console.log('image non valide');
     }
   };
 
@@ -106,7 +118,6 @@ export default class NewBill {
         .bills()
         .update({ data: JSON.stringify(bill), selector: this.billId })
         .then((res) => {
-          console.log('res', res);
           this.onNavigate(ROUTES_PATH['Bills']);
         })
         .catch((error) => console.error(error));

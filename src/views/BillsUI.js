@@ -18,8 +18,14 @@ const row = (bill) => {
     `;
 };
 
+
+
 const rows = (data) => {
+  // *** Bug fix for sort date from earliest to latest *** //
+  // Add reverse() to reverse the order of the array of bills
+  // Add antiChrono to sort the date from earliest to latest
   if (data) {
+    data.reverse();
     const antiChrono = (a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime();
     const dataArray = [...data];

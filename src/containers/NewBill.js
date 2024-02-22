@@ -20,7 +20,7 @@ export default class NewBill {
     new Logout({ document, localStorage, onNavigate });
   }
   handleChangeFile = (e) => {
-    console.log('handlechangefile call + value fromvalid', this.isFormImgValid);
+    console.log('handlechangefile called');
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
@@ -37,11 +37,10 @@ export default class NewBill {
       fileErrorMessage.textContent =
         'Type de fichier non pris en charge. Seuls les fichiers JPEG, JPG et PNG sont autorisés.';
       submitButton.disabled = true;
-      console.log('dans l image false');
+      this.isFormImgValid = false;
     } else {
       // If image format is valid
-      //If the file is valid change the value to true
-
+      //If the file is valid change the value to true and remove the error message
       fileErrorMessage.textContent = '';
       submitButton.disabled = false;
 
@@ -53,21 +52,13 @@ export default class NewBill {
       this.formData = formData;
       this.fileName = fileName;
       this.isFormImgValid = true;
-      console.log('dans limage valid true');
-
       //Remove the preview code to change the update data only onsubmit, move it on handlesubmit
     }
+    console.log('this.isFormImgValid', this.isFormImgValid);
   };
   handleSubmit = (e) => {
     e.preventDefault();
-    console.log(
-      'e.target.querySelector(`input[data-testid="datepicker"]`).value',
-      e.target.querySelector(`input[data-testid="datepicker"]`).value
-    );
-    console.log({ e });
     console.log('HANDELSUBMIT called ');
-    console.log('valid img is', this.isFormImgValid);
-
     const email = JSON.parse(localStorage.getItem('user')).email;
     const bill = {
       email,
@@ -106,8 +97,6 @@ export default class NewBill {
           this.updateBill(bill);
         })
         .catch((error) => console.error(error));
-    } else {
-      console.log('image non valide');
     }
   };
 

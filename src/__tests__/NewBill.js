@@ -8,9 +8,9 @@ import { localStorageMock } from '../__mocks__/localStorage.js';
 import NewBill from '../containers/NewBill.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import userEvent from '@testing-library/user-event';
-import NewBillUI from '../views/NewBillUI.js';
-
 import router from '../app/Router.js';
+import NewBillUI from '../views/NewBillUI.js';
+import { bills } from '../fixtures/bills.js';
 
 jest.mock('../app/store', () => mockStore);
 
@@ -28,23 +28,24 @@ describe('NewBill', () => {
       })
     );
   });
-
-  beforeEach(() => {
-    // Create a root element for rendering and append it to the document
-    const root = document.createElement('div');
-    root.setAttribute('id', 'root');
-    document.body.append(root);
-
-    // Set up the router and navigate to the NewBills page
-    router();
-    window.onNavigate(ROUTES_PATH.NewBill);
-  });
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
-
-  //** UI tests **/
+  //***********************//
+  //****** UI tests *******/
+  //*********************//
   describe('Given I am connected as an employee', () => {
+    beforeEach(() => {
+      // Create a root element for rendering and append it to the document
+      const root = document.createElement('div');
+      root.setAttribute('id', 'root');
+      document.body.append(root);
+
+      // Set up the router and navigate to the NewBills page
+      router();
+      window.onNavigate(ROUTES_PATH.NewBill);
+    });
+    afterEach(() => {
+      document.body.innerHTML = '';
+    });
+
     describe('When I am on NewBill Page', () => {
       // Test to verify if the mail icon is highlighted
       test('Then the mail icon in vertical layout should be highlighted', () => {
@@ -60,7 +61,7 @@ describe('NewBill', () => {
         expect(screen.getAllByText('Envoyer une note de frais')).toBeTruthy();
       });
 
-      //-- Form field testS --//
+      //-- Form field tests - required --//
       test('Then the form should have a field for expense type, datepicker, amount, pct and file, which would be required', () => {
         const expenseType = screen.getByTestId('expense-type');
         expect(expenseType).toBeTruthy();
@@ -82,6 +83,7 @@ describe('NewBill', () => {
         expect(file).toBeTruthy();
         expect(file.hasAttribute('required')).toBe(true);
       });
+      //-- Form field tests - not required --//
       test('Then the form should have a field for expense name, TVA(vat) and comments,  wich would be not required', () => {
         const expenseName = screen.getByTestId('expense-name');
         expect(expenseName).toBeTruthy();
@@ -102,28 +104,35 @@ describe('NewBill', () => {
       });
     });
   });
-
-  //** Integration tests */
+  //***********************//
+  //** Integration tests *//
+  //*********************//
   describe('When I am on NewBill page and uploading a file', () => {
-    let newBill;
-
     beforeEach(() => {
+      // Create a root element for rendering and append it to the document
+      const root = document.createElement('div');
+      root.setAttribute('id', 'root');
+      document.body.append(root);
+
+      // Set up the router and navigate to the NewBills page
+      router();
+      window.onNavigate(ROUTES_PATH.NewBill);
+    });
+    afterEach(() => {
+      document.body.innerHTML = '';
+    });
+
+    // test to verify the upload with an invalid file
+    test('Then I upload an invalid file, then an error message is displayed', async () => {
+      let newBill;
+
       newBill = new NewBill({
         document,
         onNavigate,
         store: mockStore,
         localStorage,
       });
-    });
 
-    afterEach(() => {
-      document.body.innerHTML = '';
-    });
-
-    // *********************//
-    // *** INVALID FILE *** //
-    // ********************//
-    test('Then I upload an invalid file, then an error message is displayed', async () => {
       const handleChangeFile = spyOn(newBill, 'handleChangeFile');
       const fileInput = screen.getByTestId('file');
       const file = new File(['invalideFile.pdf'], 'invalideFile.pdf', {
@@ -144,10 +153,17 @@ describe('NewBill', () => {
       );
     });
 
-    // ********************//
-    // *** VALID FILE *** //
-    // ********************//
+    // test to verify the upload with a valid file
     test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
+      let newBill;
+
+      newBill = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage,
+      });
+
       const handleChangeFile = spyOn(newBill, 'handleChangeFile');
       const fileInput = screen.getByTestId('file');
 
@@ -171,149 +187,151 @@ describe('NewBill', () => {
   });
 });
 
-//** Post tests  **/
+//***********************//
+//** Post tests *//
+//*********************//
+describe('I am on NewBill page', () => {
+  beforeAll(() => {
+    // Set up local storage for employee authentication
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+    });
+    window.localStorage.setItem(
+      'user',
+      JSON.stringify({
+        type: 'Employee',
+        email: 'a@a',
+      })
+    );
+  });
 
-//     const newBill = new NewBill({
-//       document,
-//       onNavigate,
-//       store: mockStore,
-//       localStorage,
-//     });
-//     // Mock the updateBill function to simulate form submission
-//     jest.spyOn(newBill, 'updateBill').mockImplementation(() => {});
-//     // const handleSubmit = spyOn(newBill, 'handleSubmit');
+  beforeEach(() => {
+    // Create a root element for rendering and append it to the document
+    const root = document.createElement('div');
+    root.setAttribute('id', 'root');
+    document.body.append(root);
+  });
+  afterEach(() => {
+    // Clear the document body after each test
+    document.body.innerHTML = '';
+    // Clear the mock data after each test
+    jest.clearAllMocks();
+  });
 
-//     // const submitBtn = screen.getByTestId('submit-button');
-//     const fileInput = screen.getByTestId('file');
+  describe('When I submit the form', () => {
+    // test to verify that the handleSubmit method is called
+    test('Then I click on submit button, the submit method is called ', async () => {
+      document.body.innerHTML = NewBillUI();
 
-//     const expenseTypeInput = screen.getByTestId('expense-type');
-//     const expenseNameInput = screen.getByTestId('expense-name');
-//     const datePickerInput = screen.getByTestId('datepicker');
-//     const amountInput = screen.getByTestId('amount');
-//     const vatInput = screen.getByTestId('vat');
-//     const pctInput = screen.getByTestId('pct');
-//     const commentaryInput = screen.getByTestId('commentary');
+      const onNavigate = jest.fn();
 
-//     // Simuler les changements dans chaque champ
-//     fireEvent.change(expenseTypeInput, { target: { value: 'Transports' } });
+      // Create a new instance of NewBill
+      const newBillContainer = new NewBill({
+        document,
+        onNavigate,
+        store: mockStore,
+        localStorage: localStorageMock,
+      });
 
-//     fireEvent.change(expenseNameInput, {
-//       target: { value: 'Nom de la dépense' },
-//     });
-//     fireEvent.change(datePickerInput, { target: { value: '2024-01-29' } });
-//     fireEvent.change(amountInput, { target: { value: '100.00' } });
-//     fireEvent.change(vatInput, { target: { value: '20.00' } });
-//     fireEvent.change(pctInput, { target: { value: '10' } });
-//     fireEvent.change(commentaryInput, {
-//       target: { value: 'Commentaire sur la dépense' },
-//     });
+      // Data from the fixture bills
+      const dataInput = bills[0];
 
-//     // Simulate the form submission
-//     const formNewBill = screen.getByTestId('form-new-bill');
-//     fireEvent.submit(formNewBill);
+      // INPUTS FIELDS
+      const expenseTypeInput = screen.getByTestId('expense-type');
+      const expenseNameInput = screen.getByTestId('expense-name');
+      const datePickerInput = screen.getByTestId('datepicker');
+      const amountInput = screen.getByTestId('amount');
+      const vatInput = screen.getByTestId('vat');
+      const pctInput = screen.getByTestId('pct');
+      const commentaryInput = screen.getByTestId('commentary');
+      const submitBtn = screen.getByTestId('submit-button');
+      const form = screen.getByTestId('form-new-bill');
+      const fileInput = screen.getByTestId('file');
 
-//     expect(newBill.updateBill).toHaveBeenCalled();
-//     expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH['Bills']);
-//   });
-// });
-// test('Then updateBill method should be called', async () => {
-//   const newBill = new NewBill({
-//     document,
-//     onNavigate,
-//     store: mockStore,
-//     localStorage,
-//   });
+      // SPY
+      const handleChangeFile = spyOn(newBillContainer, 'handleChangeFile');
+      const handleSubmitSpy = jest.spyOn(newBillContainer, 'handleSubmit');
+      const createSpy = jest.spyOn(mockStore.bills(), 'create');
 
-//   const handleSubmit = spyOn(newBill, 'handleSubmit');
-//   newBill.isFormImgValid = true;
+      // Create a new file
+      const file = new File(
+        ['preview-facture-free-201801-pdf-1.jpg'],
+        'preview-facture-free-201801-pdf-1.jpg',
+        {
+          type: 'image/jpg',
+        }
+      );
 
-//   const formNewBill = screen.getByTestId('form-new-bill');
-//   const submitBtn = screen.getByTestId('submit-button');
-//   const fileInput = screen.getByTestId('file');
+      // Change the file input
+      await fireEvent.change(fileInput, { target: { files: [file] } });
 
-//   const expenseTypeInput = screen.getByTestId('expense-type');
-//   const expenseNameInput = screen.getByTestId('expense-name');
-//   const datePickerInput = screen.getByTestId('datepicker');
-//   const amountInput = screen.getByTestId('amount');
-//   const vatInput = screen.getByTestId('vat');
-//   const pctInput = screen.getByTestId('pct');
-//   const commentaryInput = screen.getByTestId('commentary');
+      // Change the submit button property to enable it and set the isFormImgValid to true
+      submitBtn.disabled = false;
+      newBillContainer.isFormImgValid = true;
 
-//   const file = new File(['valideFile.png'], 'valideFile.png', {
-//     type: 'image/png',
-//   });
-//   expect(formNewBill).toBeInTheDocument();
+      // Change the input fields with the data from the fixture
+      fireEvent.change(expenseTypeInput, { target: { value: dataInput.type } });
+      fireEvent.change(expenseNameInput, {
+        target: { value: dataInput.name },
+      });
+      fireEvent.change(datePickerInput, { target: { value: dataInput.date } });
+      fireEvent.change(amountInput, {
+        target: { value: String(dataInput.amount) },
+      });
+      fireEvent.change(vatInput, { target: { value: dataInput.vat } });
+      fireEvent.change(pctInput, { target: { value: String(dataInput.pct) } });
+      fireEvent.change(commentaryInput, {
+        target: { value: dataInput.commentary },
+      });
 
-//   await userEvent.upload(fileInput, file);
-//   expect(fileInput.files[0]).toEqual(file);
+      // Verify that the file input has the file
+      expect(fileInput.files[0]).toEqual(file);
 
-//   // Simuler les changements dans chaque champ
-//   fireEvent.change(expenseTypeInput, { target: { value: 'Transports' } });
+      // Verify that the handleChangeFile method is called
+      expect(handleChangeFile).toHaveBeenCalled();
 
-//   fireEvent.change(expenseNameInput, {
-//     target: { value: 'Nom de la dépense' },
-//   });
-//   fireEvent.change(datePickerInput, { target: { value: '2024-01-29' } });
-//   fireEvent.change(amountInput, { target: { value: '100.00' } });
-//   fireEvent.change(vatInput, { target: { value: '20.00' } });
-//   fireEvent.change(pctInput, { target: { value: '10' } });
-//   fireEvent.change(commentaryInput, {
-//     target: { value: 'Commentaire sur la dépense' },
-//   });
+      // Click on the submit button
+      userEvent.click(submitBtn);
 
-//   // Vérifier que les champs contiennent la valeur correcte
-//   expect(expenseTypeInput.value).toBe('Transports');
-//   expect(expenseNameInput.value).toBe('Nom de la dépense');
-//   expect(vatInput.value).toBe('20.00');
+      // Verfiy that the handleSubmit method is called
+      expect(handleSubmitSpy).toHaveBeenCalled();
 
-//   userEvent.click(submitBtn);
-//   expect(handleSubmit).toHaveBeenCalled();
+      // Verify that the create method is called
+      expect(createSpy).toHaveBeenCalled();
+    });
+  });
 
-// OnNavigate va bien sur la page Bills mais il ne voit que les données du mock, pas celles mise dans les
-// window.onNavigate(ROUTES_PATH.Bills);
-// await new Promise(process.nextTick);
-// const title = screen.getByText(/Mes notes de frais/);
-// expect(title).toBeTruthy();
-// Ici cela failed
-//     const name = screen.getByText(/Nom de la dépense/);//     |                         ^
-// 306 |     expect(name).toBeTruthy();
-// const name = screen.getByText(/Nom de la dépense/);
-// expect(name).toBeTruthy();
-// console.log(title.textContent);
+  describe('When I post a new bill', () => {
+    // test to verify that the post method is called
+    test('Then add new bill from the mock Api, the post method is called ', async () => {
+      // SPY on the bills method
+      const postSpy = jest.spyOn(mockStore, 'bills');
 
-// const test = screen.getByText(/test1/);
-// console.log(test.textContent);
-// expect(test).toBeTruthy();
-// const amount = screen.getByText(/100 €/);
-// console.log(amount.textContent);
-//   });
-// });
+      // Data expected from the mock Api
+      const bill = {
+        id: '47qAXb6fIm2zOKkLzMro',
+        vat: '80',
+        fileUrl:
+          'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+        status: 'pending',
+        type: 'Hôtel et logement',
+        commentary: 'séminaire billed',
+        name: 'encore',
+        fileName: 'preview-facture-free-201801-pdf-1.jpg',
+        date: '2004-04-04',
+        amount: 400,
+        commentAdmin: 'ok',
+        email: 'a@a',
+        pct: 20,
+      };
 
-// const spy = jest.spyOn(mockStore, 'bills');
-// const bill = {
-//   id: '47qAXb6fIm2zOKkLzMro',
-//   vat: '80',
-//   fileUrl:
-//     'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
-//   status: 'pending',
-//   type: 'Hôtel et logement',
-//   commentary: 'séminaire billed',
-//   name: 'encore',
-//   fileName: 'preview-facture-free-201801-pdf-1.jpg',
-//   date: '2004-04-04',
-//   amount: 400,
-//   commentAdmin: 'ok',
-//   email: 'a@a',
-//   pct: 20,
-// };
-// const formData = {
-//   fileUrl: 'https://localhost:3456/images/test.jpg',
-//   key: '1234',
-// };
-// const createBill = await mockStore.bills().create(bill);
-// const postBill = await mockStore.bills().update(bill);
-// expect(spy).toHaveBeenCalled();
-// expect(createBill).toEqual(formData);
-// expect(postBill).toEqual(bill);
+      // Call the update method from the bills method with the bill data
+      const postBills = await mockStore.bills().update(bill);
 
-//----------------FIN-----------------------//
+      // Verify that the bills method is called
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(postBills).toEqual(bill);
+    });
+  });
+});
+

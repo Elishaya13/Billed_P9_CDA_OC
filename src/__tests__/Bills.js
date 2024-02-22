@@ -10,8 +10,6 @@ import { bills } from '../fixtures/bills.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
 import router from '../app/Router.js';
-
-// Importing extend-expect to enhance Jest assertions with additional matchers
 import '@testing-library/jest-dom/extend-expect';
 
 jest.mock('../app/store', () => mockStore);
@@ -19,7 +17,7 @@ jest.mock('../app/store', () => mockStore);
 // -- Tests for view - BillsUi.js -- //
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
-    // Test to ensure the window icon in vertical layout is highlighted
+    // *** Test to ensure the window icon in vertical layout is highlighted *** //
     test('Then bill icon in vertical layout should be highlighted', async () => {
       // Set up local storage for employee authentication
       Object.defineProperty(window, 'localStorage', {
@@ -48,17 +46,19 @@ describe('Given I am connected as an employee', () => {
       expect(windowIcon).toHaveClass('active-icon');
     });
 
-    // Test to ensure bills are ordered from earliest to latest
+    // *** Test to ensure bills are ordered from earliest to latest *** //
     test('Then bills should be ordered from earliest to latest', () => {
       // Set up the Bills UI with sample data
       document.body.innerHTML = BillsUI({ data: bills });
 
-      // Extract and sort dates from the bills
+      // Extract dates from the bills
       const dates = screen
         .getAllByText(
           /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i
         )
         .map((a) => a.innerHTML);
+
+      // Sort the dates in reverse chronological order
       const antiChrono = (a, b) => (a < b ? 1 : -1);
       const datesSorted = [...dates].sort(antiChrono);
 
@@ -66,14 +66,14 @@ describe('Given I am connected as an employee', () => {
       expect(dates).toEqual(datesSorted);
     });
 
-    // Test to ensure there is a button for a new bill
+    // *** Test to ensure there is a button for a new bill *** //
     test('Then, Bills have a button for a new bill', () => {
       document.body.innerHTML = BillsUI({ data: bills });
       const buttonText = screen.getByText('Nouvelle note de frais');
       expect(buttonText).toBeTruthy();
     });
 
-    // Test to ensure eyes icons are present
+    // *** Test to ensure eyes icons are present *** //
     test('Then, I see eyes icons', () => {
       document.body.innerHTML = BillsUI({ data: bills });
       const eyesIcons = screen.getAllByTestId('icon-eye');
@@ -138,8 +138,8 @@ describe('Given I am connected as an employee', () => {
     });
   });
 
-  // Test to ensure redirection to New Bill page on click
   describe('When I am on Bills page, and I click on new bill', () => {
+    // *** Test to ensure redirection to New Bill page on click *** //
     test('Then I should be redirected to the New Bill page with the title "Envoyer une note de frais"', async () => {
       // Mock local storage for employee authentication
       Object.defineProperty(window, 'localStorage', {
@@ -192,6 +192,8 @@ describe('Given I am connected as an employee', () => {
       store: mockStore,
       localStorage: localStorageMock,
     });
+
+    // test to verify that the getBills method returns an array of 4 objects
     test('should return an array of 4 objects', async () => {
       // Call the getBills method
       const bills = await billsContainer.getBills();
@@ -199,10 +201,14 @@ describe('Given I am connected as an employee', () => {
       expect(Array.isArray(bills)).toBe(true);
       expect(bills.length).toBe(4);
     });
+
+    // test to verify that the getBills method returns dates formatted correctly
     test('should return dates formatted correctly', async () => {
       const bills = await billsContainer.getBills();
       expect(bills[0].date).toEqual('4 Avr. 04');
     });
+
+    // test to verify that the getBills method returns unformatted date if the date is invalid
     test('should return unformatted date if the date is invalid', async () => {
       jest.spyOn(mockStore, 'bills').mockImplementationOnce(() => {
         const billsList = {
@@ -217,6 +223,7 @@ describe('Given I am connected as an employee', () => {
         };
         return billsList;
       });
+
       // Call the getBills method
       const billsArray = await billsContainer.getBills();
       // Assert that the date is returned unformatted for invalid input
@@ -228,6 +235,7 @@ describe('Given I am connected as an employee', () => {
 // -- Test d'intégration GET --
 describe('Given I am a user connected as Employee', () => {
   describe('When I navigate on Bill page', () => {
+    // *** Test to ensure bills are fetched from the API and displayed *** //
     test('Then, fetches bills from mock API GET', async () => {
       localStorage.setItem(
         'user',
@@ -263,6 +271,8 @@ describe('Given I am a user connected as Employee', () => {
         document.body.appendChild(root);
         router();
       });
+
+      // *** Test to ensure error message is displayed for 404 error *** //
       test('fetches bills from an API and fails with 404 message error', async () => {
         mockStore.bills.mockImplementationOnce(() => {
           return {
@@ -276,6 +286,8 @@ describe('Given I am a user connected as Employee', () => {
         const message = screen.getByText(/Erreur 404/);
         expect(message).toBeTruthy();
       });
+
+      // *** Test to ensure error message is displayed for 500 error *** //
       test('fetches messages from an API and fails with 500 message error', async () => {
         mockStore.bills.mockImplementationOnce(() => {
           return {

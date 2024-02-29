@@ -122,7 +122,7 @@ describe('NewBill', () => {
       document.body.innerHTML = '';
     });
 
-    // test to verify the upload with an invalid file
+    // test to verify the UPLOAD with an INVALID file
     test('Then I upload an invalid file, then an error message is displayed', async () => {
       let newBill;
 
@@ -153,7 +153,7 @@ describe('NewBill', () => {
       );
     });
 
-    // test to verify the upload with a valid file
+    // test to verify the UPLOAD with a VALID file
     test('Then I upload a valid file, the file name should be displayed into the input and submit button is not disabled and no error message is displayed', async () => {
       let newBill;
 
@@ -331,6 +331,104 @@ describe('I am on NewBill page', () => {
       // Verify that the bills method is called
       expect(postSpy).toHaveBeenCalledTimes(1);
       expect(postBills).toEqual(bill);
+    });
+
+    // ************************************************* //
+    // ** Test an error occurs on API call ERROR 404 ** //
+    // *********************************************** //
+    describe('When I post a new bill and an error occurs', () => {
+      beforeEach(() => {
+        window.localStorage.setItem(
+          'user',
+          JSON.stringify({
+            type: 'Employee',
+            email: 'a@a',
+          })
+        );
+        document.body.innerHTML = NewBillUI();
+      });
+      afterEach(() => {
+        document.body.innerHTML = '';
+        jest.clearAllMocks();
+      });
+      test('post bill failed with 404 message error', async () => {
+        const store = {
+          bills: jest.fn().mockImplementation(() => newBill.store),
+          create: jest.fn().mockImplementation(() => Promise.resolve({})),
+          update: jest
+            .fn()
+            .mockImplementation(() => Promise.reject(new Error('404'))),
+        };
+
+        const newBill = new NewBill({
+          document,
+          onNavigate: (pathname) => {
+            document.body.innerHTML = ROUTES({ pathname });
+          },
+          store,
+          localStorage,
+        });
+        newBill.isFormImgValid = true;
+
+        // Submit form
+        const form = screen.getByTestId('form-new-bill');
+        const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+        form.addEventListener('submit', handleSubmit);
+
+        fireEvent.submit(form);
+        await new Promise(process.nextTick);
+
+        await expect(store.update()).rejects.toEqual(new Error('404'));
+      });
+    });
+
+    // ************************************************* //
+    // ** Test an error occurs on API call ERROR 500 ** //
+    // *********************************************** //
+    describe('When I post a new bill and an error occurs', () => {
+      beforeEach(() => {
+        window.localStorage.setItem(
+          'user',
+          JSON.stringify({
+            type: 'Employee',
+            email: 'a@a',
+          })
+        );
+        document.body.innerHTML = NewBillUI();
+      });
+      afterEach(() => {
+        document.body.innerHTML = '';
+        jest.clearAllMocks();
+      });
+      test('post bill failed with 500 message error', async () => {
+        const store = {
+          bills: jest.fn().mockImplementation(() => newBill.store),
+          create: jest.fn().mockImplementation(() => Promise.resolve({})),
+          update: jest
+            .fn()
+            .mockImplementation(() => Promise.reject(new Error('500'))),
+        };
+
+        const newBill = new NewBill({
+          document,
+          onNavigate: (pathname) => {
+            document.body.innerHTML = ROUTES({ pathname });
+          },
+          store,
+          localStorage,
+        });
+        newBill.isFormImgValid = true;
+
+        // Submit form
+        const form = screen.getByTestId('form-new-bill');
+        const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+        form.addEventListener('submit', handleSubmit);
+
+        fireEvent.submit(form);
+        await new Promise(process.nextTick);
+
+        await expect(store.update()).rejects.toEqual(new Error('500'));
+      });
     });
   });
 });

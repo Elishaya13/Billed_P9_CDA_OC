@@ -146,10 +146,11 @@ export default class {
 
   handleShowTickets(e, bills, index) {
     let filterBills;
-    // Create a new array with the bills that match the selected the status
-    filterBills = filteredBills(bills, getStatus(this.index));
+    
     if (this.counter === undefined || this.index !== index) this.counter = 0;
     if (this.index === undefined || this.index !== index) this.index = index;
+    // Create a new array with the bills that match the selected the status
+    filterBills = filteredBills(bills, getStatus(this.index));
     if (this.counter % 2 === 0) {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(0deg)' });
       $(`#status-bills-container${this.index}`).html(cards(filterBills));

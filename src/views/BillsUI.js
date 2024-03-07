@@ -34,9 +34,10 @@ const rows = (data) => {
     return dataSorted && dataSorted.length
       ? dataSorted.map((bill) => row(bill)).join('')
       : '';
-  } else {
-    console.log('empty data');
   }
+  //else {
+  //   console.log('empty data');
+  // }
 };
 
 export default ({ data: bills, loading, error }) => {

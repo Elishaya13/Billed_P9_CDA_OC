@@ -48,6 +48,8 @@ export default class Login {
 
   handleSubmitAdmin = (e) => {
     e.preventDefault();
+    // *** BUG FIX : LOGIN change the data-testid with the right value (admin-email-input and admin-password-input) *** //
+    // before: employee-email-input  employee-password-input
     const user = {
       type: 'Admin',
       email: e.target.querySelector(`input[data-testid="admin-email-input"]`)

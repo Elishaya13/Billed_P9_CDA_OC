@@ -12,8 +12,6 @@ import router from '../app/Router.js';
 import NewBillUI from '../views/NewBillUI.js';
 import { bills } from '../fixtures/bills.js';
 
-jest.mock('../app/store', () => mockStore);
-
 describe('NewBill', () => {
   beforeAll(() => {
     // Set up local storage for employee authentication
@@ -188,7 +186,7 @@ describe('NewBill', () => {
 });
 
 //***********************//
-//** Post tests *//
+//***** Post tests *****//
 //*********************//
 describe('I am on NewBill page', () => {
   beforeAll(() => {
@@ -218,8 +216,8 @@ describe('I am on NewBill page', () => {
     jest.clearAllMocks();
   });
 
+  // TEST SUBMIT FORM
   describe('When I submit the form', () => {
-    // test to verify that the handleSubmit method is called
     test('Then I click on submit button, the submit method is called ', async () => {
       document.body.innerHTML = NewBillUI();
 
@@ -290,10 +288,8 @@ describe('I am on NewBill page', () => {
       // Verify that the handleChangeFile method is called
       expect(handleChangeFile).toHaveBeenCalled();
 
-      // Click on the submit button
+      // Click on the submit button and verfiy that the handleSubmit method is called
       userEvent.click(submitBtn);
-
-      // Verfiy that the handleSubmit method is called
       expect(handleSubmitSpy).toHaveBeenCalled();
 
       // Verify that the create method is called
@@ -301,10 +297,10 @@ describe('I am on NewBill page', () => {
     });
   });
 
+  // TEST POST METHOD
   describe('When I post a new bill', () => {
-    // test to verify that the post method is called
     test('Then add new bill from the mock Api, the post method is called ', async () => {
-      // SPY on the bills method
+      // SPY on the bills methods
       const postSpy = jest.spyOn(mockStore, 'bills');
 
       // Data expected from the mock Api
@@ -328,14 +324,14 @@ describe('I am on NewBill page', () => {
       // Call the update method from the bills method with the bill data
       const postBills = await mockStore.bills().update(bill);
 
-      // Verify that the bills method is called
+      // Verify that the post bills method is called and the data is correct
       expect(postSpy).toHaveBeenCalledTimes(1);
       expect(postBills).toEqual(bill);
     });
 
-    // ************************************************* //
-    // ** Test an error occurs on API call ERROR 404 ** //
-    // *********************************************** //
+    // ********************************************************* //
+    // ** Test an error occurs on API call - ERROR 404 and 500 ** //
+    // ******************************************************* //
     describe('When I post a new bill and an error occurs', () => {
       beforeEach(() => {
         window.localStorage.setItem(
@@ -351,84 +347,40 @@ describe('I am on NewBill page', () => {
         document.body.innerHTML = '';
         jest.clearAllMocks();
       });
-      test('post bill failed with 404 message error', async () => {
-        const store = {
-          bills: jest.fn().mockImplementation(() => newBill.store),
-          create: jest.fn().mockImplementation(() => Promise.resolve({})),
-          update: jest
-            .fn()
-            .mockImplementation(() => Promise.reject(new Error('404'))),
-        };
+      // Test each error message
+      test.each(['404', '500'])(
+        'post bill failed with %s message error',
+        async (errorMessage) => {
+          const error = new Error(errorMessage);
+          const newBill = new NewBill({
+            document,
+            onNavigate: (pathname) => {
+              document.body.innerHTML = ROUTES({ pathname });
+            },
+            store: mockStore,
+            localStorage,
+          });
+          newBill.isFormImgValid = true;
 
-        const newBill = new NewBill({
-          document,
-          onNavigate: (pathname) => {
-            document.body.innerHTML = ROUTES({ pathname });
-          },
-          store,
-          localStorage,
-        });
-        newBill.isFormImgValid = true;
+          // SPY
+          const createSpy = jest.spyOn(mockStore.bills(), 'create');
+          const logSpy = jest.spyOn(console, 'error');
+          const navigateSpy = jest.spyOn(newBill, 'onNavigate');
 
-        // Submit form
-        const form = screen.getByTestId('form-new-bill');
-        const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
-        form.addEventListener('submit', handleSubmit);
+          // Mock the create method to return an error
+          createSpy.mockImplementationOnce(() => Promise.reject(error));
 
-        fireEvent.submit(form);
-        await new Promise(process.nextTick);
+          // Submit form and wait for the error
+          const form = screen.getByTestId('form-new-bill');
+          fireEvent.submit(form);
+          await new Promise(process.nextTick);
 
-        await expect(store.update()).rejects.toEqual(new Error('404'));
-      });
-    });
-
-    // ************************************************* //
-    // ** Test an error occurs on API call ERROR 500 ** //
-    // *********************************************** //
-    describe('When I post a new bill and an error occurs', () => {
-      beforeEach(() => {
-        window.localStorage.setItem(
-          'user',
-          JSON.stringify({
-            type: 'Employee',
-            email: 'a@a',
-          })
-        );
-        document.body.innerHTML = NewBillUI();
-      });
-      afterEach(() => {
-        document.body.innerHTML = '';
-        jest.clearAllMocks();
-      });
-      test('post bill failed with 500 message error', async () => {
-        const store = {
-          bills: jest.fn().mockImplementation(() => newBill.store),
-          create: jest.fn().mockImplementation(() => Promise.resolve({})),
-          update: jest
-            .fn()
-            .mockImplementation(() => Promise.reject(new Error('500'))),
-        };
-
-        const newBill = new NewBill({
-          document,
-          onNavigate: (pathname) => {
-            document.body.innerHTML = ROUTES({ pathname });
-          },
-          store,
-          localStorage,
-        });
-        newBill.isFormImgValid = true;
-
-        // Submit form
-        const form = screen.getByTestId('form-new-bill');
-        const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
-        form.addEventListener('submit', handleSubmit);
-
-        fireEvent.submit(form);
-        await new Promise(process.nextTick);
-
-        await expect(store.update()).rejects.toEqual(new Error('500'));
-      });
+          // Verify that the error log is called with the error message
+          expect(logSpy).toBeCalledWith(error);
+          // And verify that the navigate method is not called
+          expect(navigateSpy).not.toBeCalled();
+        }
+      );
     });
   });
 });

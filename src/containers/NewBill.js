@@ -20,7 +20,6 @@ export default class NewBill {
     new Logout({ document, localStorage, onNavigate });
   }
   handleChangeFile = (e) => {
-    console.log('handlechangefile called');
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
@@ -30,6 +29,10 @@ export default class NewBill {
     const submitButton = this.document.querySelector(
       `button[data-testid="submit-button"]`
     );
+
+    // *** BUG FIX : Add a verification to check if the mime type is valid *** //
+    // --> If not valid, display an error message and disable the submit button to prevent submission //
+    // Code Change : The bill is created during the submit event, not on handleChangeFile method and only if the file format is valid
 
     // If image format is not valid
     if (!allowedMimeTypes.includes(file.type)) {
@@ -52,13 +55,11 @@ export default class NewBill {
       this.formData = formData;
       this.fileName = fileName;
       this.isFormImgValid = true;
-      //Remove the preview code to change the update data only onsubmit, move it on handlesubmit
+      // The code that was previously here has been moved to ensure that the update method is only called upon submission (in handleSubmit).
     }
-    console.log('this.isFormImgValid', this.isFormImgValid);
   };
   handleSubmit = (e) => {
     e.preventDefault();
-    console.log('HANDELSUBMIT called ');
     const email = JSON.parse(localStorage.getItem('user')).email;
     const bill = {
       email,
@@ -78,9 +79,10 @@ export default class NewBill {
       fileName: this.fileName,
       status: 'pending',
     };
+
+    // if image format is valid call the methods to create the bill and call updateBill method
     if (this.isFormImgValid) {
-      // if image format is valid call the methods to create the bill and call updateBill methode
-      // code moved in handleSubmit
+      // this code was moved from handleChangeFile to handleSubmit
       this.store
         .bills()
         .create({

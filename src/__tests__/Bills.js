@@ -14,7 +14,9 @@ import '@testing-library/jest-dom/extend-expect';
 
 jest.mock('../app/store', () => mockStore);
 
-// -- Tests for view - BillsUi.js -- //
+//**************************//
+// ** TESTS  BillsUi.js ** //
+//************************//
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
     // *** Test to ensure the window icon in vertical layout is highlighted *** //
@@ -41,7 +43,7 @@ describe('Given I am connected as an employee', () => {
       // Wait for the window icon to be rendered
       await waitFor(() => screen.getByTestId('icon-window'));
       const windowIcon = screen.getByTestId('icon-window');
-      //Add assertion
+      // Add assertion
       expect(windowIcon).toBeTruthy();
       expect(windowIcon).toHaveClass('active-icon');
     });
@@ -81,8 +83,9 @@ describe('Given I am connected as an employee', () => {
     });
   });
 });
-
-// -- Tests for container Bills.js -- //
+//*********************************//
+// ** Tests container Bills.js ** //
+//*******************************//
 describe('Given I am connected as an employee', () => {
   describe('When I am on the Bills page, and I click on eye icon', () => {
     test('Should open a modal, and the displayed file should be present in the document', async () => {

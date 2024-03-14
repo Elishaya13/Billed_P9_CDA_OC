@@ -63,4 +63,4 @@ Comportement attendu : Pourvoir déplier plusieurs listes, et consulter les tick
 
 
 ## Réalisation 
-**  📝 Angie Pons :** 03/2024
+  📝 Angie Pons : 03/2024
